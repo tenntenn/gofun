@@ -8,6 +8,7 @@
       android:label="GoFun" 
       android:icon="@drawable/ic_launcher"
       android:hasCode="false">
+      <!-- アイコンの設定がうまくいかない -->
   
     <activity android:name="android.app.NativeActivity"
       android:label="GoFun"
