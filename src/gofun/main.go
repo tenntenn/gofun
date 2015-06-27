@@ -10,13 +10,13 @@ import (
 	_ "image/png"
 
 	"golang.org/x/mobile/app"
-	"golang.org/x/mobile/audio"
 	"golang.org/x/mobile/event"
+	"golang.org/x/mobile/exp/audio"
+	"golang.org/x/mobile/exp/sprite"
+	"golang.org/x/mobile/exp/sprite/clock"
+	"golang.org/x/mobile/exp/sprite/glsprite"
 	"golang.org/x/mobile/f32"
 	"golang.org/x/mobile/gl"
-	"golang.org/x/mobile/sprite"
-	"golang.org/x/mobile/sprite/clock"
-	"golang.org/x/mobile/sprite/glsprite"
 )
 
 type State int
@@ -46,10 +46,28 @@ var (
 )
 
 func main() {
-	app.Run(app.Callbacks{
-		Start: start,
-		Draw:  draw,
-		Touch: touch,
+	app.Main(func(a app.App) error {
+		var c event.Config
+		for e := range a.Events() {
+			switch e := event.Filter(e).(type) {
+			case event.Lifecycle:
+				switch e.Crosses(event.LifecycleStageVisible) {
+				case event.ChangeOn:
+					start()
+				case event.ChangeOff:
+					stop()
+				}
+			case event.Config:
+				//config(e, c)
+				c = e
+			case event.Draw:
+				draw(c)
+				a.EndDraw()
+			case event.Touch:
+				touch(e, c)
+			}
+		}
+		return nil
 	})
 }
 
@@ -57,9 +75,9 @@ func start() {
 	loadSE()
 }
 
-func draw() {
+func draw(c event.Config) {
 	if scene == nil {
-		loadScene()
+		loadScene(c)
 	}
 
 	now := clock.Time(time.Since(startClock) * 60 / time.Second)
@@ -70,7 +88,7 @@ func draw() {
 
 	gl.ClearColor(1, 1, 1, 1)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
-	eng.Render(scene, now)
+	eng.Render(scene, now, c)
 	//debug.DrawFPS()
 }
 
@@ -78,7 +96,7 @@ func stop() {
 	player.Close()
 }
 
-func touch(t event.Touch) {
+func touch(t event.Touch, c event.Config) {
 	//log.Printf("touch %#v", t)
 	if t.ID != 0 && t.Type != event.TouchEnd {
 		return
@@ -116,7 +134,6 @@ func newTimeNode() *sprite.Node {
 			return
 		}
 
-		fmt.Println(t)
 		remaining := 60*5 - time.Since(startClock)/time.Second
 		if last == remaining {
 			return
@@ -165,13 +182,12 @@ func newEndNode() *sprite.Node {
 	return n
 }
 
-func loadScene() {
+func loadScene(c event.Config) {
 	gl.Enable(gl.BLEND)
 	gl.BlendEquation(gl.FUNC_ADD)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-	conf := app.GetConfig()
-	w, h := float32(conf.Width), float32(conf.Height)
+	w, h := float32(c.Width), float32(c.Height)
 
 	texs = loadTextures()
 	scene = &sprite.Node{}
@@ -206,7 +222,6 @@ func loadScene() {
 
 	startVisilbe, endVisible := false, false
 	scene.Arranger = arrangerFunc(func(eng sprite.Engine, n *sprite.Node, t clock.Time) {
-		fmt.Println("state", state)
 		switch state {
 		case stateStart:
 			if !startVisilbe {
