@@ -10,6 +10,7 @@ import (
 	_ "image/png"
 
 	"golang.org/x/mobile/app"
+	"golang.org/x/mobile/asset"
 	"golang.org/x/mobile/event"
 	"golang.org/x/mobile/exp/audio"
 	"golang.org/x/mobile/exp/sprite"
@@ -46,7 +47,7 @@ var (
 )
 
 func main() {
-	app.Main(func(a app.App) error {
+	app.Main(func(a app.App) {
 		var c event.Config
 		for e := range a.Events() {
 			switch e := event.Filter(e).(type) {
@@ -67,7 +68,6 @@ func main() {
 				touch(e, c)
 			}
 		}
-		return nil
 	})
 }
 
@@ -248,7 +248,7 @@ func loadScene(c event.Config) {
 }
 
 func loadTextures() map[string]sprite.SubTex {
-	a, err := app.Open("tx_letters.png")
+	a, err := asset.Open("tx_letters.png")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -281,7 +281,7 @@ func loadTextures() map[string]sprite.SubTex {
 }
 
 func loadSE() {
-	rc, err := app.Open("gooon.wav")
+	rc, err := asset.Open("gooon.wav")
 	if err != nil {
 		log.Fatal(err)
 	}
